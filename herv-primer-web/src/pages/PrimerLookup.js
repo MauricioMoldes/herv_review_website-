@@ -3,7 +3,6 @@ import { useSearchParams } from "react-router-dom";
 import { getPrimersForward, getPrimersReverse } from "../api/primers";
 import PrimerSetCard from "../components/PrimerSetCard";
 
-// Module-level cache — survives navigation, keyed by serialized search params
 const lookupCache = new Map();
 
 export default function PrimerLookup() {
@@ -14,11 +13,11 @@ export default function PrimerLookup() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
   const [error, setError] = useState(null);
+  const [hasSearched, setHasSearched] = useState(false);
 
-  // Sync state from URL and fetch on mount / URL change
   useEffect(() => {
     const urlMode = searchParams.get("mode") || "forward";
-    const urlSeq  = searchParams.get("sequence") || "";
+    const urlSeq = searchParams.get("sequence") || "";
 
     setMode(urlMode);
     setSequence(urlSeq);
@@ -50,18 +49,33 @@ export default function PrimerLookup() {
         lookupCache.set(cacheKey, data);
         if (isActive) setResults(data);
       } catch (err) {
-        if (isActive) setError("Lookup failed. Check sequence or API connection.");
+        if (isActive)
+          setError("Lookup failed. Check sequence or API connection.");
       } finally {
         if (isActive) setLoading(false);
       }
     })();
 
-    return () => { isActive = false; };
+    return () => {
+      isActive = false;
+    };
   }, [searchParams.toString()]);
 
   const handleSearch = () => {
     if (!sequence.trim()) return;
-    setSearchParams({ mode, sequence: sequence.trim().toUpperCase() });
+
+    setHasSearched(true);
+
+    setSearchParams({
+      mode,
+      sequence: sequence.trim().toUpperCase(),
+    });
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
   };
 
   return (
@@ -115,8 +129,11 @@ export default function PrimerLookup() {
                 : "Paste reverse primer sequence..."
             }
             value={sequence}
-            onChange={(e) => setSequence(e.target.value.toUpperCase())}
-            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+            onChange={(e) => {
+              setSequence(e.target.value.toUpperCase());
+              setHasSearched(false);
+            }}
+            onKeyDown={handleKeyDown}
           />
 
           <button
@@ -130,7 +147,11 @@ export default function PrimerLookup() {
 
       {/* STATUS */}
       <div className="mt-6">
-        {loading && <p className="text-gray-500">Searching primer relationships...</p>}
+        {loading && (
+          <p className="text-gray-500">
+            Searching primer relationships...
+          </p>
+        )}
         {error && <p className="text-red-600">{error}</p>}
         {!loading && results.length > 0 && (
           <p className="text-sm text-gray-500">
@@ -151,7 +172,7 @@ export default function PrimerLookup() {
       </div>
 
       {/* EMPTY STATE */}
-      {!loading && results.length === 0 && sequence && (
+      {!loading && hasSearched && results.length === 0 && sequence && (
         <p className="text-gray-400 mt-6">
           No matches found for this sequence.
         </p>

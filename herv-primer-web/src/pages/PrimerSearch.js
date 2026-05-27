@@ -40,7 +40,6 @@ export default function PrimerSearch() {
 
     const cacheKey = searchParams.toString();
 
-    // Return cached results immediately — no flash, no loading spinner
     if (primerCache.has(cacheKey)) {
       setResults(primerCache.get(cacheKey));
       return;
@@ -63,7 +62,9 @@ export default function PrimerSearch() {
       }
     })();
 
-    return () => { isActive = false; };
+    return () => {
+      isActive = false;
+    };
   }, [searchParams.toString()]);
 
   const handleSearch = () => {
@@ -79,6 +80,12 @@ export default function PrimerSearch() {
         Object.entries(q).filter(([_, v]) => v !== "" && v !== false)
       )
     );
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
   };
 
   return (
@@ -105,6 +112,7 @@ export default function PrimerSearch() {
             placeholder="Family (e.g. HERV-K)"
             value={family}
             onChange={(e) => setFamily(e.target.value.toUpperCase())}
+            onKeyDown={handleKeyDown}
           />
 
           <input
@@ -112,6 +120,7 @@ export default function PrimerSearch() {
             placeholder="Subgroup (e.g. HML-2)"
             value={subgroup}
             onChange={(e) => setSubgroup(e.target.value.toUpperCase())}
+            onKeyDown={handleKeyDown}
           />
 
           <input
@@ -119,6 +128,7 @@ export default function PrimerSearch() {
             placeholder="Component (gag / env / pol)"
             value={component}
             onChange={(e) => setComponent(e.target.value.toLowerCase())}
+            onKeyDown={handleKeyDown}
           />
 
         </div>
@@ -130,6 +140,7 @@ export default function PrimerSearch() {
               type="checkbox"
               checked={dna}
               onChange={(e) => setDna(e.target.checked)}
+              onKeyDown={handleKeyDown}
             />
             DNA assays only
           </label>
